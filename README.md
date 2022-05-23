@@ -4,6 +4,10 @@ check RX-8025T
 the repositry for me verify RTC RX-8025T with STM32F103RC
 to simualtion an I2C master by software
 
+
+### Result Logic Analyzer
+![result](Docs/rtc_test.png)
+
 --------------
 
 ### Hardward configuration of board
