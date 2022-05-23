@@ -60,16 +60,11 @@ static void MX_USART1_UART_Init(void);
 #endif
 
 void rtcBusInit(void);
-void i2c_start_cond(void);
-void i2c_stop_cond(void);
-uint8_t i2c_write_byte(uint8_t send_start, uint8_t send_stop,
-                       uint8_t byte);
-uint8_t i2c_read_byte(uint8_t nack, uint8_t send_stop);
 uint8_t rtcI2CWriteBytes(uint8_t addr, uint8_t reg, const uint8_t *array, uint8_t len);
 uint8_t rtcI2CWriteByte(uint8_t addr, uint8_t reg, uint8_t val);
-uint8_t rtcSimpleReadBytes(uint8_t addr, uint8_t reg, uint8_t *array, uint8_t len);
 uint8_t rtcI2CReadByte(uint8_t addr, uint8_t reg);
-uint8_t rtcSimpleReadByte(uint8_t addr, uint8_t reg);
+uint8_t rtcI2CReadBytes(uint8_t addr, uint8_t reg, uint8_t *array, uint8_t len);
+
 uint8_t chkDevOnBus(uint8_t addr);
 /* USER CODE END PFP */
 
@@ -136,33 +131,14 @@ int main(void)
   }
   {
     uint8_t array[4] = { 0 };
-    rtcSimpleReadBytes(0x32, 0xE, array, 2);
+    rtcI2CReadBytes(0x32, 0xE, array, 2);
   }
 
-#if 0
-  rtcI2CWriteByte(0x32, 0x0E, (uint8_t)1 << 5);
-  rtcI2CWriteByte(0x32, 0x0F, ((uint8_t)1 << 5) + ((uint8_t)1 << 7));
+  data = rtcI2CReadByte(0x32, 0xE);
   printf("Address: 0x0E, value:0x%02x\n", data);
-  data = rtcI2CReadByte(0x32, 0xF0);
+  data = rtcI2CReadByte(0x32, 0xF);
   printf("Address: 0x0F, value:0x%02x\n", data);
-  data = rtcSimpleReadByte(0x32, 0x0E);
-  printf("Address: 0x0E, value:0x%02x\n", data);
-  data = rtcSimpleReadByte(0x32, 0x0F);
-  printf("Address: 0x0F, value:0x%02x\n", data);
-  rtcI2CWriteByte(0x32, 0x0E, (uint8_t)1 << 5);
-  rtcI2CWriteByte(0x32, 0x0F, ((uint8_t)1 << 5) + ((uint8_t)1 << 7));
-  rtcI2CWriteByte(0x32, 0, 0);
-  rtcI2CWriteByte(0x32, 1, 0);
-  rtcI2CWriteByte(0x32, 2, 0);
-  data = rtcSimpleReadByte(0x32, 0x00);
-  printf("Address: 0x00, value:0x%02x\n", data);
-  data = rtcSimpleReadByte(0x32, 0x01);
-  printf("Address: 0x00, value:0x%02x\n", data);
-  data = rtcSimpleReadByte(0x32, 0x0E);
-  printf("Address: 0x0E, value:0x%02x\n", data);
-  data = rtcSimpleReadByte(0x32, 0x0F);
-  printf("Address: 0x0F, value:0x%02x\n", data);
-#endif
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
