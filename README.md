@@ -3,7 +3,9 @@ check RX-8025T
 
 the repositry for me verify RTC RX-8025T with STM32F103RC
 to simualtion an I2C master by software
+the code verify passed now
 
+RX-8025T not equal RX8025SA/NB
 
 ### Result Logic Analyzer
 ![result](Docs/rtc_test.png)
