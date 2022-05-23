@@ -23,7 +23,7 @@
 #define set_SDA()       HAL_GPIO_WritePin(SDA_GPIO_Port, SDA_Pin, GPIO_PIN_SET)
 #define clear_SDA()     HAL_GPIO_WritePin(SDA_GPIO_Port, SDA_Pin, GPIO_PIN_RESET)
 #define read_SDA()      (HAL_GPIO_ReadPin(SDA_GPIO_Port, SDA_Pin) == GPIO_PIN_SET)
-#define I2C_delay()     delayUs(25)
+#define I2C_delay()     delayUs(24)
 
 #define delayParameters (200)
 static uint8_t started = 0;
@@ -46,6 +46,7 @@ void rtcBusInit(void) {
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	I2C_delay();
 }
 
 void i2c_start_cond(void) {
@@ -168,6 +169,7 @@ uint8_t i2c_write_byte(uint8_t send_start, uint8_t send_stop,
 
   if (send_start) {
     i2c_start_cond();
+		delayUs(1);
   }
 
   for (bit = 0; bit < 8; ++bit) {
@@ -193,7 +195,7 @@ uint8_t i2c_read_byte(uint8_t nack, uint8_t send_stop) {
     byte = (byte << 1) | i2c_read_bit();
   }
 
-  i2c_write_bit(nack);
+  i2c_write_bit((nack & 0x01) == 1);
 
   if (send_stop) {
     i2c_stop_cond();
@@ -275,6 +277,33 @@ uint8_t rtcI2CDataIn(void) {
 }
 #endif
 
+uint8_t rtcI2CWriteBytes(uint8_t addr, uint8_t reg,const uint8_t *array, uint8_t len)
+{
+  uint8_t ack;
+	unsigned i;
+	
+  ack = i2c_write_byte(1, 0, (addr << 1) + CMD_WRITE);
+  if (ack) {
+    while(1); // failed
+  }
+
+  ack = i2c_write_byte(0, 0, reg << 4);
+  if (ack) {
+    while(1); // failed
+  }
+	for (i = 0; i < (len-1); i++) {
+		ack = i2c_write_byte(0, 0, array[i]);
+		if (ack) {
+			while(1); // failed
+		}
+	}
+	ack = i2c_write_byte(0, 1, array[i]);
+	if (ack) {
+		while(1); // failed
+	}
+  return 1;	
+}
+
 uint8_t rtcI2CWriteByte(uint8_t addr, uint8_t reg, uint8_t val) {
   uint8_t ack;
   ack = i2c_write_byte(1, 0, (addr << 1) + CMD_WRITE);
@@ -332,6 +361,28 @@ uint8_t rtcSimpleReadByte(uint8_t addr, uint8_t reg)
 
   result = i2c_read_byte(1, 1);
   return result;
+}
+
+uint8_t rtcSimpleReadBytes(uint8_t addr, uint8_t reg, uint8_t *array, uint8_t len)
+{
+  uint8_t result;
+  uint8_t ack;
+	uint8_t i;
+  ack = i2c_write_byte(1, 0, (addr << 1) + CMD_WRITE);
+  if (ack) {
+    while(1); // failed
+  }
+  ack = i2c_write_byte(0, 0, (reg << 4) + 4); // for simple read
+  if (ack) {
+    while(1); // failed
+  }
+	
+	for (i = 0; i < len - 1; i++)
+	{
+		array[i] = i2c_read_byte(0, 0);
+	}
+  array[i] = i2c_read_byte(1, 1);
+  return result;	
 }
 
 uint8_t chkDevOnBus(uint8_t addr)
