@@ -2,7 +2,6 @@
 #include "stm32f1xx_hal.h"
 #include <stdint.h>
 
-
 #define CMD_WRITE       (0)
 #define CMD_READ        (1)
 #define SCL_Pin         GPIO_PIN_14
@@ -25,7 +24,6 @@
 #define read_SDA()      ((SCL_GPIO_Port->IDR & SDA_Pin) ? 1 : 0)
 #define I2C_delay()     delayUs(22)
 
-#define delayParameters (200)
 static uint8_t started = 0;
 
 static void delayUs(volatile uint32_t nCount) {
@@ -33,7 +31,7 @@ static void delayUs(volatile uint32_t nCount) {
     ;
 }
 
-void rtcBusInit(void) {
+void swI2CBusInit(void) {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -49,7 +47,7 @@ void rtcBusInit(void) {
 	I2C_delay();
 }
 
-void i2c_start_cond(void) {
+static void i2c_start_cond(void) {
   if (started) {
     // if started, do a restart condition
     // set SDA to 1
@@ -74,7 +72,7 @@ void i2c_start_cond(void) {
   started = 1;
 }
 
-void i2c_stop_cond(void) {
+static void i2c_stop_cond(void) {
   // set SDA to 0
   clear_SDA();
   I2C_delay();
@@ -100,7 +98,7 @@ void i2c_stop_cond(void) {
 }
 
 // Write a bit to I2C bus
-void i2c_write_bit(uint8_t bit) {
+static void i2c_write_bit(uint8_t bit) {
   if (bit) {
     set_SDA();
   } else {
@@ -131,7 +129,7 @@ void i2c_write_bit(uint8_t bit) {
 }
 
 // Read a bit from I2C bus
-uint8_t i2c_read_bit(void) {
+static uint8_t i2c_read_bit(void) {
   uint8_t bit;
 
   // Let the target drive data
@@ -162,7 +160,7 @@ uint8_t i2c_read_bit(void) {
 }
 
 // Write a byte to I2C bus. Return 0 if ack by the target.
-uint8_t i2c_write_byte(uint8_t send_start, uint8_t send_stop,
+static uint8_t i2c_write_byte(uint8_t send_start, uint8_t send_stop,
                        uint8_t byte) {
   uint8_t bit;
   uint8_t nack;
@@ -187,7 +185,7 @@ uint8_t i2c_write_byte(uint8_t send_start, uint8_t send_stop,
 }
 
 // Read a byte from I2C bus
-uint8_t i2c_read_byte(uint8_t nack, uint8_t send_stop) {
+static uint8_t i2c_read_byte(uint8_t nack, uint8_t send_stop) {
   uint8_t byte = 0;
   uint8_t bit;
 
@@ -204,7 +202,27 @@ uint8_t i2c_read_byte(uint8_t nack, uint8_t send_stop) {
   return byte;
 }
 
-uint8_t rtcI2CWriteBytes(uint8_t addr, uint8_t reg,const uint8_t *array, uint8_t len)
+uint8_t swI2CWriteByte(uint8_t addr, uint8_t reg, uint8_t val)
+{
+  uint8_t ack;
+  ack = i2c_write_byte(1, 0, (addr << 1) + CMD_WRITE);
+  if (ack) {
+    while(1); // failed
+  }
+
+  ack = i2c_write_byte(0, 0, reg);
+  if (ack) {
+    while(1); // failed
+  }
+
+  ack = i2c_write_byte(0, 1, val);
+  if (ack) {
+    while(1); // failed
+  }
+  return 1;
+}
+
+uint8_t swI2CWriteBytes(uint8_t addr, uint8_t reg,const uint8_t *array, uint8_t len)
 {
   uint8_t ack;
 	unsigned i;
@@ -231,26 +249,8 @@ uint8_t rtcI2CWriteBytes(uint8_t addr, uint8_t reg,const uint8_t *array, uint8_t
   return 1;
 }
 
-uint8_t rtcI2CWriteByte(uint8_t addr, uint8_t reg, uint8_t val) {
-  uint8_t ack;
-  ack = i2c_write_byte(1, 0, (addr << 1) + CMD_WRITE);
-  if (ack) {
-    while(1); // failed
-  }
-
-  ack = i2c_write_byte(0, 0, reg);
-  if (ack) {
-    while(1); // failed
-  }
-
-  ack = i2c_write_byte(0, 1, val);
-  if (ack) {
-    while(1); // failed
-  }
-  return 1;
-}
-
-uint8_t rtcI2CReadByte(uint8_t addr, uint8_t reg) {
+uint8_t swI2CReadByte(uint8_t addr, uint8_t reg)
+{
   uint8_t result;
   uint8_t ack;
 
@@ -273,7 +273,8 @@ uint8_t rtcI2CReadByte(uint8_t addr, uint8_t reg) {
   return result;
 }
 
-uint8_t rtcI2CReadBytes(uint8_t addr, uint8_t reg, uint8_t *array, uint8_t len) {
+uint8_t swI2CReadBytes(uint8_t addr, uint8_t reg, uint8_t *array, uint8_t len)
+{
   uint8_t result;
   uint8_t ack;
   unsigned i;

@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <stdlib.h>
+#include "sw_i2c.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,14 +59,6 @@ static void MX_USART1_UART_Init(void);
 #else
 #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif
-
-void rtcBusInit(void);
-uint8_t rtcI2CWriteBytes(uint8_t addr, uint8_t reg, const uint8_t *array, uint8_t len);
-uint8_t rtcI2CWriteByte(uint8_t addr, uint8_t reg, uint8_t val);
-uint8_t rtcI2CReadByte(uint8_t addr, uint8_t reg);
-uint8_t rtcI2CReadBytes(uint8_t addr, uint8_t reg, uint8_t *array, uint8_t len);
-
-uint8_t chkDevOnBus(uint8_t addr);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -111,7 +104,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   printf("\n\nCheck RTC Bus\n");
 
-  rtcBusInit();
+  swI2CBusInit();
   #if 0
   {
     const uint8_t initcode[] = { 0, 1 << 5, ((uint8_t)1 << 6) };
@@ -122,16 +115,16 @@ int main(void)
   #endif
   {
     uint8_t array[4] = { 0 };
-    rtcI2CReadBytes(0x32, 0xE, array, 2);
+    swI2CReadBytes(0x32, 0xE, array, 2);
   }
 
-  data = rtcI2CReadByte(0x32, 0xE);
+  data = swI2CReadByte(0x32, 0xE);
   printf("Address: 0x0E, value:0x%02x\n", data);
-  data = rtcI2CReadByte(0x32, 0xF);
+  data = swI2CReadByte(0x32, 0xF);
   printf("Address: 0x0F, value:0x%02x\n", data);
   {
     uint8_t array[10] = { 0 };
-    rtcI2CReadBytes(0x32, 0, array, 8);
+    swI2CReadBytes(0x32, 0, array, 8);
     printf("\n%02x %02x %02x %02x ", array[0], array[1], array[2], array[3]);
     printf("%02x %02x %02x %02x\n", array[4], array[5], array[6], array[7]);
   }
