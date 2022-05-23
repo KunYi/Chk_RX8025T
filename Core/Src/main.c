@@ -112,23 +112,14 @@ int main(void)
   printf("\n\nCheck RTC Bus\n");
 
   rtcBusInit();
-  /*
-  for (uint8_t devAddr = 0; devAddr < 0x7F; devAddr++) {
-    if (chkDevOnBus(devAddr)) {
-      printf("Found device on addr: 0x%02x\n", devAddr);
-    }
-  }
-  */
-
-  while (0) {
-    data = rtcI2CReadByte(0x32, 0xE0);
-    data = rtcI2CReadByte(0x32, 0xE0);	
-  }
-
+  #if 0
   {
-    const uint8_t initcode[] = { 1 << 5, ((uint8_t)1 << 5) + ((uint8_t)1 << 7) };
-    rtcI2CWriteBytes(0x32, 0x0E, initcode, 2);
+    const uint8_t initcode[] = { 0, 1 << 5, ((uint8_t)1 << 6) };
+    const uint8_t initDate[] = { 0, 0, 0, 0, 1, 1, 1, };
+    rtcI2CWriteBytes(0x32, 0x0D, initcode, 3);
+    rtcI2CWriteBytes(0x32, 0x0, initDate, 7);
   }
+  #endif
   {
     uint8_t array[4] = { 0 };
     rtcI2CReadBytes(0x32, 0xE, array, 2);
@@ -138,6 +129,12 @@ int main(void)
   printf("Address: 0x0E, value:0x%02x\n", data);
   data = rtcI2CReadByte(0x32, 0xF);
   printf("Address: 0x0F, value:0x%02x\n", data);
+  {
+    uint8_t array[10] = { 0 };
+    rtcI2CReadBytes(0x32, 0, array, 8);
+    printf("\n%02x %02x %02x %02x ", array[0], array[1], array[2], array[3]);
+    printf("%02x %02x %02x %02x\n", array[4], array[5], array[6], array[7]);
+  }
 
   /* USER CODE END 2 */
 
