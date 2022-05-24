@@ -17,11 +17,11 @@
 #define READ_SDA()      (HAL_GPIO_ReadPin(SDA_GPIO_Port, SDA_Pin) == GPIO_PIN_SET)
 
 #define set_SCL()       do { SCL_GPIO_Port->BSRR = SCL_Pin; } while(0)
-#define clear_SCL()     do { SCL_GPIO_Port->BSRR = (uint32_t)(SCL_Pin << 16); } while(0)
+#define clear_SCL()     do { SCL_GPIO_Port->BRR  = SCL_Pin; } while(0)
 #define read_SCL()      ((SCL_GPIO_Port->IDR & SCL_Pin) ? 1 : 0)
 #define set_SDA()       do { SDA_GPIO_Port->BSRR = SDA_Pin; } while(0)
-#define clear_SDA()     do { SDA_GPIO_Port->BSRR = (uint32_t)(SDA_Pin << 16); } while(0)
-#define read_SDA()      ((SCL_GPIO_Port->IDR & SDA_Pin) ? 1 : 0)
+#define clear_SDA()     do { SDA_GPIO_Port->BRR  = SDA_Pin; } while(0)
+#define read_SDA()      ((SDA_GPIO_Port->IDR & SDA_Pin) ? 1 : 0)
 #define I2C_delay()     delayUs(22)
 
 static uint8_t started = 0;
@@ -167,7 +167,7 @@ static uint8_t i2c_write_byte(uint8_t send_start, uint8_t send_stop,
 
   if (send_start) {
     i2c_start_cond();
-		delayUs(1);
+    delayUs(1);
   }
 
   for (bit = 0; bit < 8; ++bit) {
@@ -225,7 +225,7 @@ uint8_t swI2CWriteByte(uint8_t addr, uint8_t reg, uint8_t val)
 uint8_t swI2CWriteBytes(uint8_t addr, uint8_t reg,const uint8_t *array, uint8_t len)
 {
   uint8_t ack;
-	unsigned i;
+  unsigned i;
 
   ack = i2c_write_byte(1, 0, (addr << 1) + CMD_WRITE);
   if (ack) {
@@ -236,16 +236,19 @@ uint8_t swI2CWriteBytes(uint8_t addr, uint8_t reg,const uint8_t *array, uint8_t 
   if (ack) {
     while(1); // failed
   }
-	for (i = 0; i < (len-1); i++) {
-		ack = i2c_write_byte(0, 0, array[i]);
-		if (ack) {
-			while(1); // failed
-		}
-	}
-	ack = i2c_write_byte(0, 1, array[i]);
-	if (ack) {
-		while(1); // failed
-	}
+
+  for (i = 0; i < (len-1); i++) {
+    ack = i2c_write_byte(0, 0, array[i]);
+    if (ack) {
+      while(1); // failed
+    }
+  }
+
+  ack = i2c_write_byte(0, 1, array[i]);
+  if (ack) {
+    while(1); // failed
+  }
+
   return 1;
 }
 

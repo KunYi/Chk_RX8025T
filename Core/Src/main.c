@@ -115,13 +115,16 @@ int main(void)
   #endif
   {
     uint8_t array[4] = { 0 };
+    array[0] = swI2CReadByte(0x32, 0x0E);
     swI2CReadBytes(0x32, 0xE, array, 2);
   }
 
   data = swI2CReadByte(0x32, 0xE);
   printf("Address: 0x0E, value:0x%02x\n", data);
   data = swI2CReadByte(0x32, 0xF);
+
   printf("Address: 0x0F, value:0x%02x\n", data);
+  while(1)
   {
     uint8_t array[10] = { 0 };
     swI2CReadBytes(0x32, 0, array, 8);
