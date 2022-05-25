@@ -1,12 +1,12 @@
 
-#include "stm32f1xx_hal.h"
+#include "stm32f10x.h"
 #include <stdint.h>
 
 #define CMD_WRITE       (0)
 #define CMD_READ        (1)
-#define SCL_Pin         GPIO_PIN_14
+#define SCL_Pin         GPIO_Pin_14
 #define SCL_GPIO_Port   GPIOB
-#define SDA_Pin         GPIO_PIN_13
+#define SDA_Pin         GPIO_Pin_13
 #define SDA_GPIO_Port   GPIOB
 
 #define SCL_L()         HAL_GPIO_WritePin(SCL_GPIO_Port, SCL_Pin, GPIO_PIN_RESET)
@@ -16,12 +16,12 @@
 #define SDA_H()         HAL_GPIO_WritePin(SDA_GPIO_Port, SDA_Pin, GPIO_PIN_SET)
 #define READ_SDA()      (HAL_GPIO_ReadPin(SDA_GPIO_Port, SDA_Pin) == GPIO_PIN_SET)
 
-#define set_SCL()       do { SCL_GPIO_Port->BSRR = SCL_Pin; } while(0)
-#define clear_SCL()     do { SCL_GPIO_Port->BRR  = SCL_Pin; } while(0)
-#define read_SCL()      ((SCL_GPIO_Port->IDR & SCL_Pin) ? 1 : 0)
-#define set_SDA()       do { SDA_GPIO_Port->BSRR = SDA_Pin; } while(0)
-#define clear_SDA()     do { SDA_GPIO_Port->BRR  = SDA_Pin; } while(0)
-#define read_SDA()      ((SDA_GPIO_Port->IDR & SDA_Pin) ? 1 : 0)
+#define set_SCL()       do { GPIO_SetBits(SCL_GPIO_Port, SCL_Pin); } while(0)
+#define clear_SCL()     do { GPIO_ResetBits(SCL_GPIO_Port, SCL_Pin); } while(0)
+#define read_SCL()      (GPIO_ReadInputDataBit(SCL_GPIO_Port, SCL_Pin))
+#define set_SDA()       do { GPIO_SetBits(SDA_GPIO_Port, SDA_Pin); } while(0)
+#define clear_SDA()     do { GPIO_ResetBits(SDA_GPIO_Port, SDA_Pin); } while(0)
+#define read_SDA()      (GPIO_ReadInputDataBit(SDA_GPIO_Port, SDA_Pin))
 #define I2C_delay()     delayUs(22)
 
 static uint8_t started = 0;
@@ -33,17 +33,16 @@ static void delayUs(volatile uint32_t nCount) {
 
 void swI2CBusInit(void) {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 
-  SDA_H();
-  SCL_H();
+  set_SDA();
+  set_SCL();
 
   /*Configure GPIO pins : SCL_Pin and SDA_Pin */
-  GPIO_InitStruct.Pin = SCL_Pin | SDA_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIO_InitStruct.GPIO_Pin = SCL_Pin | SDA_Pin;
+  GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_OD;
+  GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_Init(GPIOB, &GPIO_InitStruct);
   I2C_delay();
 }
 
@@ -236,19 +235,16 @@ uint8_t swI2CWriteBytes(uint8_t addr, uint8_t reg,const uint8_t *array, uint8_t 
   if (ack) {
     while(1); // failed
   }
-
   for (i = 0; i < (len-1); i++) {
     ack = i2c_write_byte(0, 0, array[i]);
     if (ack) {
       while(1); // failed
     }
   }
-
   ack = i2c_write_byte(0, 1, array[i]);
   if (ack) {
     while(1); // failed
   }
-
   return 1;
 }
 
